@@ -8,7 +8,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'home_page.dart';
 import 'signup_page.dart';
 import 'user_data.dart';
-
+import 'organization_login_page.dart';
 void main() {
   runApp(const MyApp());
 }
@@ -444,6 +444,7 @@ class _LoginPageState extends State<LoginPage> {
 
                               const SizedBox(height: 20),
 
+                              
                               // Sign Up
                               Row(
                                 mainAxisAlignment:
@@ -477,6 +478,53 @@ class _LoginPageState extends State<LoginPage> {
                                   ),
                                 ],
                               ),
+
+                              // БАЙГУУЛЛАГААР НЭВТРЭХ
+                              const SizedBox(height: 20),
+
+                              const Divider(
+                                color: Colors.white54,
+                              ),
+
+                              const SizedBox(height: 15),
+
+                              SizedBox(
+                                width: double.infinity,
+                                height: 52,
+                                child: OutlinedButton.icon(
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            const OrganizationLoginPage(),
+                                      ),
+                                    );
+                                  },
+                                  icon: const Icon(
+                                    Icons.business_rounded,
+                                    color: Colors.white,
+                                  ),
+                                  label: const Text(
+                                    'БАЙГУУЛЛАГААР НЭВТРЭХ',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                  style: OutlinedButton.styleFrom(
+                                    side: const BorderSide(
+                                      color: Colors.white,
+                                      width: 1.5,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius:
+                                          BorderRadius.circular(14),
+                                    ),
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -492,3 +540,4 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 }
+
