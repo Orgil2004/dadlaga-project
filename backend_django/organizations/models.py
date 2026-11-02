@@ -1,10 +1,23 @@
 
 import math
-from django.core.exceptions import ValidationError
-from django.core.validators import MinValueValidator, MaxValueValidator
+
 from django.db import models
+from django.core.exceptions import ValidationError
+from django.core.validators import (
+    MinValueValidator,
+    MaxValueValidator,
+)
+
 
 class Organization(models.Model):
+
+    VERIFICATION_CHOICES = [
+        ('pending', 'Хүлээгдэж байгаа'),
+        ('approved', 'Баталгаажсан'),
+        ('rejected', 'Татгалзсан'),
+    ]
+
+    # Өмнө байсан талбарууд
     name = models.CharField(max_length=200)
 
     category = models.CharField(max_length=100)
@@ -16,38 +29,158 @@ class Organization(models.Model):
         blank=True
     )
 
-    description = models.TextField(
+    description = models.TextField(blank=True)
+
+    latitude = models.FloatField(
+        null=True,
+        blank=True,
+        validators=[
+            MinValueValidator(-85),
+            MaxValueValidator(85),
+        ]
+    )
+
+    longitude = models.FloatField(
+        null=True,
+        blank=True,
+        validators=[
+            MinValueValidator(-180),
+            MaxValueValidator(180),
+        ]
+    )
+
+    opening_hours = models.CharField(
+        max_length=200,
         blank=True
     )
 
-    latitude = models.FloatField(null=True, blank=True, validators=[MinValueValidator(-85), MaxValueValidator(85)])
-    longitude = models.FloatField(null=True, blank=True, validators=[MinValueValidator(-180), MaxValueValidator(180)])
-    opening_hours = models.CharField(max_length=200, blank=True)
     is_demo = models.BooleanField(default=False)
+
+    # Шинээр нэмсэн бүртгэлийн мэдээлэл
+    legal_name = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name='Албан ёсны нэр'
+    )
+
+    registration_number = models.CharField(
+        max_length=50,
+        unique=True,
+        null=True,
+        blank=True,
+        verbose_name='Байгууллагын регистр'
+    )
+
+    admin_name = models.CharField(
+        max_length=150,
+        blank=True,
+        verbose_name='Админы нэр'
+    )
+
+    admin_email = models.EmailField(
+        blank=True,
+        verbose_name='Админы имэйл'
+    )
+
+    admin_phone = models.CharField(
+        max_length=20,
+        blank=True,
+        verbose_name='Админы утас'
+    )
+
+    registration_document_reference = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name='Гэрчилгээний лавлагаа'
+    )
+
+    verification_status = models.CharField(
+        max_length=20,
+        choices=VERIFICATION_CHOICES,
+        default='pending',
+        verbose_name='Баталгаажуулалтын төлөв'
+    )
+
+    verified_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Баталгаажуулсан огноо'
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
 
     def clean(self):
         super().clean()
-        if (self.latitude is None) != (self.longitude is None):
-            raise ValidationError('Өргөрөг, уртрагыг хамтад нь оруулна уу.')
+
+        if (self.latitude is None) != (
+            self.longitude is None
+        ):
+            raise ValidationError(
+                'Өргөрөг, уртрагыг хамтад нь оруулна уу.'
+            )
+
         for field in ('latitude', 'longitude'):
             value = getattr(self, field)
+
             if value is not None and not math.isfinite(value):
-                raise ValidationError({field: 'Бодит координат оруулна уу.'})
+                raise ValidationError({
+                    field: 'Бодит координат оруулна уу.'
+                })
+
+        if self.registration_number is not None:
+            self.registration_number = (
+                self.registration_number.strip() or None
+            )
 
     def __str__(self):
         return self.name
 
 
 class Product(models.Model):
-    organization = models.ForeignKey(Organization, related_name='products', on_delete=models.CASCADE)
+
+    organization = models.ForeignKey(
+        Organization,
+        related_name='products',
+        on_delete=models.CASCADE
+    )
+
     name = models.CharField(max_length=200)
-    category = models.CharField(max_length=100, blank=True)
+
+    category = models.CharField(
+        max_length=100,
+        blank=True
+    )
+
     description = models.TextField(blank=True)
-    price = models.DecimalField(max_digits=12, decimal_places=0, validators=[MinValueValidator(0)])
-    sizes = models.CharField(max_length=150, blank=True, help_text='Жишээ: S, M, L, XL')
-    colors = models.CharField(max_length=150, blank=True, help_text='Жишээ: Хар, Цагаан')
-    image_url = models.URLField(max_length=1000, blank=True, help_text='Барааны зургийн https холбоос (заавал биш)')
+
+    price = models.DecimalField(
+        max_digits=12,
+        decimal_places=0,
+        validators=[MinValueValidator(0)]
+    )
+
+    sizes = models.CharField(
+        max_length=150,
+        blank=True,
+        help_text='Жишээ: S, M, L, XL'
+    )
+
+    colors = models.CharField(
+        max_length=150,
+        blank=True,
+        help_text='Жишээ: Хар, Цагаан'
+    )
+
+    image_url = models.URLField(
+        max_length=1000,
+        blank=True,
+        help_text='Барааны зургийн HTTPS холбоос'
+    )
+
     in_stock = models.BooleanField(default=True)
+
     is_active = models.BooleanField(default=True)
 
     class Meta:
