@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -25,7 +26,10 @@ SECRET_KEY = 'django-insecure-27po4&*ufch+^igj1^6p3yui3p$i+9$o(x6_du0y(k1(6hv43y
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '[::1]']
+MAP_ALLOWED_ORIGINS = os.environ.get(
+    'MAP_ALLOWED_ORIGINS', 'http://127.0.0.1:5173,http://localhost:5173'
+).split(',')
 
 
 # Application definition
@@ -45,6 +49,7 @@ INSTALLED_APPS = [
 
 
 MIDDLEWARE = [
+    'organizations.middleware.MapReadCorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',

@@ -1,17 +1,39 @@
-# flutter_login
+# ХаанаВэ? — хэрэглэгчийн хэсэг
 
-A new Flutter project.
+Нэвтэрсний дараа Нүүр, Газрын зураг, Хадгалсан, Зар нэмэх, Мессеж,
+Профайл гэсэн зургаан хуудастай. Өргөн дэлгэцэд хажуугийн цэс,
+утсанд доод цэс харагдана.
 
-## Getting Started
+```powershell
+flutter pub get
+flutter run -d chrome
+```
 
-This project is a starting point for a Flutter application.
+Туршилтын хэрэглэгч: `user@gmail.com` / `123456`.
 
-A few resources to get you started if this is your first Flutter project:
+Нүүр дээрх хайлт, ангиллын шүүлтүүр, зарын дэлгэрэнгүй, зар хадгалах,
+шинэ зар нэмэх, профайл засах үйлдлүүд ажиллана. Газрын зураг
+OpenStreetMap зураглал ашигладаг тул интернет шаардлагатай.
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+Газрын зураг нь Django API-аас дэлгүүр болон тухайн дэлгүүрийн хувцсыг уншина.
+Дэлгүүрийн нэр, хаяг, барааны нэр, размер, өнгөөр хайж болно. «Миний байршил»
+товч нь хөтөчөөс байршлын зөвшөөрөл хүснэ. Зөвшөөрөлгүй үед газрын зургаа
+хөдөлгөөд «Энэ орчмоос хайх» товчоор хайх цэгээ сонгоно. 1, 3, 5, 10 км
+эсвэл бүх зайгаар шүүнэ. GPS сонгохоос өмнө зайг Улаанбаатарын төвөөс тооцно.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Сервер болон админы тохиргоо: [MAP_API.md](../backend_django/MAP_API.md).
+Frontend-ийг `flutter run -d chrome --web-port 5173` командаар ажиллуулна.
+Өөр сервертэй холбохдоо `--dart-define=MAP_API_BASE_URL=https://example.com/api/`
+гэж өгнө (төгсгөлд `/` оруулна). Админы шинэ барааг дэлгүүрийн хуудсан дахь
+шинэчлэх товчоор татна.
+
+Зар, хадгалсан жагсаалт, профайл, туршилтын мессежийг хэрэглэгчийн
+имэйлээр тусгаарлан тухайн төхөөрөмжид хадгална. Вэб дээр ижил origin-оор
+дахин нээхэд хадгалсан мэдээлэл уншигдана. Жишээ зарууд тусдаа тэмдэглэгээтэй.
+Мессеж бусад хэрэглэгчид илгээгдэхгүй. Хэрэглэгчийн зар болон чат Django API-тай
+хараахан холбогдоогүй. Нэвтрэх хэсэг одоогийн локал demo хэвээр байна.
+
+```powershell
+flutter test
+flutter build web
+```
