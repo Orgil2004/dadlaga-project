@@ -9,10 +9,16 @@ class StoreDetailPage extends StatefulWidget {
     required this.store,
     required this.repository,
     required this.distanceLabel,
+    this.initialQuery = '',
   });
   final MapStore store;
   final StoreRepository repository;
+
+  /// Empty when the store was opened from search rather than the map.
   final String distanceLabel;
+
+  /// Pre-fills the product search, e.g. with the feed search words.
+  final String initialQuery;
 
   @override
   State<StoreDetailPage> createState() => _StoreDetailPageState();
@@ -20,7 +26,15 @@ class StoreDetailPage extends StatefulWidget {
 
 class _StoreDetailPageState extends State<StoreDetailPage> {
   late MapStore store = widget.store;
-  String query = '';
+  late final search = TextEditingController(text: widget.initialQuery);
+  late String query = widget.initialQuery;
+
+  @override
+  void dispose() {
+    search.dispose();
+    super.dispose();
+  }
+
   bool onlyInStock = false, refreshing = false;
   String? error;
 
@@ -100,11 +114,11 @@ class _StoreDetailPageState extends State<StoreDetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    final words = searchWords(query);
     final products = store.products
         .where(
           (p) =>
-              p.searchable.contains(query.toLowerCase().trim()) &&
-              (!onlyInStock || p.inStock),
+              words.every(p.searchable.contains) && (!onlyInStock || p.inStock),
         )
         .toList();
     return Scaffold(
@@ -148,7 +162,11 @@ class _StoreDetailPageState extends State<StoreDetailPage> {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    Text('${store.category} · ${widget.distanceLabel} зайд'),
+                    Text(
+                      widget.distanceLabel.isEmpty
+                          ? store.category
+                          : '${store.category} · ${widget.distanceLabel} зайд',
+                    ),
                     const SizedBox(height: 12),
                     Text('Хаяг: ${store.address}'),
                     if (store.phone.isNotEmpty)
@@ -185,6 +203,7 @@ class _StoreDetailPageState extends State<StoreDetailPage> {
               '${products.length} бараа · Шинэ барааг шинэчлэх товчоор харна уу.',
             ),
             TextField(
+              controller: search,
               decoration: const InputDecoration(
                 labelText: 'Энэ дэлгүүрээс хайх',
                 hintText: 'Хувцас, размер, өнгө…',

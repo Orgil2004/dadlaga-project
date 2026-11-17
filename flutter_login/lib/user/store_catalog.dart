@@ -41,12 +41,24 @@ class StoreProduct {
       '$name $category $description $sizes $colors'.toLowerCase();
 }
 
+/// Category managed in the Django admin (`/api/categories/`).
+class AppCategory {
+  const AppCategory({required this.name, this.icon = 'other'});
+  final String name, icon;
+
+  factory AppCategory.fromJson(Map<String, dynamic> json) => AppCategory(
+    name: json['name'] as String,
+    icon: json['icon'] as String? ?? 'other',
+  );
+}
+
 class MapStore {
   const MapStore({
     required this.id,
     required this.name,
     required this.category,
     required this.address,
+    this.categoryIcon = '',
     this.latitude,
     this.longitude,
     this.phone = '',
@@ -56,7 +68,8 @@ class MapStore {
     this.products = const [],
   });
   final int id;
-  final String name, category, address, phone, description, openingHours;
+  final String name, category, categoryIcon, address, phone, description;
+  final String openingHours;
   final double? latitude, longitude;
   final bool isDemo;
   final List<StoreProduct> products;
@@ -66,6 +79,7 @@ class MapStore {
     name: json['name'] as String,
     category: json['category'] as String,
     address: json['address'] as String,
+    categoryIcon: json['category_icon'] as String? ?? '',
     latitude: (json['latitude'] as num?)?.toDouble(),
     longitude: (json['longitude'] as num?)?.toDouble(),
     phone: json['phone'] as String? ?? '',
@@ -91,6 +105,39 @@ class MapStore {
   String get searchable =>
       '$name $category $address $description ${products.map((p) => p.searchable).join(' ')}'
           .toLowerCase();
+
+  /// Products whose own text contains every query word.
+  List<StoreProduct> productsMatching(String query) {
+    final words = searchWords(query);
+    if (words.isEmpty) return const [];
+    return products
+        .where(
+          (p) => words.every(p.searchable.contains),
+        )
+        .toList();
+  }
+}
+
+List<String> searchWords(String query) => query
+    .toLowerCase()
+    .trim()
+    .split(RegExp(r'\s+'))
+    .where((word) => word.isNotEmpty)
+    .toList();
+
+/// Text search over stores regardless of map location (used by the feed).
+List<MapStore> filterStores(
+  List<MapStore> stores, {
+  String query = '',
+  String category = 'Бүгд',
+}) {
+  final words = searchWords(query);
+  return [
+    for (final store in stores)
+      if ((category == 'Бүгд' || store.category == category) &&
+          words.every(store.searchable.contains))
+        store,
+  ];
 }
 
 class StoreMatch {
@@ -109,11 +156,7 @@ List<StoreMatch> searchStores(
   String category = 'Бүгд',
   double? radiusKm,
 }) {
-  final words = query
-      .toLowerCase()
-      .trim()
-      .split(RegExp(r'\s+'))
-      .where((word) => word.isNotEmpty);
+  final words = searchWords(query);
   final matches = <StoreMatch>[];
   for (final store in stores) {
     if (!store.hasLocation ||
@@ -173,6 +216,17 @@ class StoreRepository {
       next = nextPage;
     }
     throw const FormatException('Repeated API page');
+  }
+
+  Future<List<AppCategory>> fetchCategories() async {
+    final json = await _get(baseUrl.resolve('categories/'));
+    final rows = json is List
+        ? json
+        : (json as Map<String, dynamic>)['results'] as List;
+    return [
+      for (final row in rows)
+        AppCategory.fromJson(Map<String, dynamic>.from(row as Map)),
+    ];
   }
 
   Future<MapStore> fetchStore(int id) async => MapStore.fromJson(

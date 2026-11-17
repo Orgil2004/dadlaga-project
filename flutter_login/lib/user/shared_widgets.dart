@@ -2,12 +2,35 @@ import 'package:flutter/material.dart';
 
 import 'workspace.dart';
 
-IconData categoryIcon(String category) => switch (category) {
-  'Электрон бараа' => Icons.devices_rounded,
-  'Гэр ахуй' => Icons.chair_outlined,
-  'Хувцас' => Icons.checkroom_rounded,
-  _ => Icons.handyman_outlined,
+/// Icon key per category name, filled from the admin-managed categories.
+final categoryIconKeys = <String, String>{
+  'Электрон бараа': 'devices',
+  'Гэр ахуй': 'chair',
+  'Хувцас': 'checkroom',
+  'Гутал': 'footwear',
+  'Спорт': 'sports',
+  'Үйлчилгээ': 'handyman',
 };
+
+IconData iconForKey(String key) => switch (key) {
+  'devices' => Icons.devices_rounded,
+  'chair' => Icons.chair_outlined,
+  'checkroom' => Icons.checkroom_rounded,
+  'footwear' => Icons.hiking_rounded,
+  'sports' => Icons.sports_basketball_outlined,
+  'restaurant' => Icons.restaurant_outlined,
+  'grocery' => Icons.local_grocery_store_outlined,
+  'spa' => Icons.spa_outlined,
+  'car' => Icons.directions_car_outlined,
+  'book' => Icons.menu_book_outlined,
+  'pets' => Icons.pets_outlined,
+  'child' => Icons.child_care_outlined,
+  'handyman' => Icons.handyman_outlined,
+  _ => Icons.category_outlined,
+};
+
+IconData categoryIcon(String category) =>
+    iconForKey(categoryIconKeys[category] ?? 'other');
 
 class PageHeading extends StatelessWidget {
   const PageHeading(this.title, this.subtitle, {super.key});
@@ -21,8 +44,9 @@ class PageHeading extends StatelessWidget {
       children: [
         Text(
           title,
-          style: Theme.of(context).textTheme.headlineSmall
-              ?.copyWith(fontWeight: FontWeight.bold),
+          style: Theme.of(
+            context,
+          ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         Text(subtitle, style: const TextStyle(color: Colors.blueGrey)),

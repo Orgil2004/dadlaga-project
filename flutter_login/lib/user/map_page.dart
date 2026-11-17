@@ -43,6 +43,7 @@ class _UserMapPageState extends State<UserMapPage> {
   void initState() {
     super.initState();
     repository = widget.repository ?? StoreRepository();
+    widget.workspace.addListener(onWorkspace);
     center = widget.focus == null
         ? const LatLng(47.9185, 106.9177)
         : LatLng(widget.focus!.latitude, widget.focus!.longitude);
@@ -66,7 +67,13 @@ class _UserMapPageState extends State<UserMapPage> {
   void dispose() {
     controller.dispose();
     if (widget.repository == null) repository.dispose();
+    widget.workspace.removeListener(onWorkspace);
     super.dispose();
+  }
+
+  // Category order/icons arrive from the admin after the first build.
+  void onWorkspace() {
+    if (mounted) setState(() {});
   }
 
   Future<void> reload() async {
@@ -85,7 +92,8 @@ class _UserMapPageState extends State<UserMapPage> {
     } catch (_) {
       if (mounted)
         setState(
-          () => loadError = 'Дэлгүүрүүдийг ачаалж чадсангүй. Серверийн холболтыг шалгаад дахин оролдоно уу.',
+          () => loadError =
+              'Дэлгүүрүүдийг ачаалж чадсангүй. Серверийн холболтыг шалгаад дахин оролдоно уу.',
         );
     } finally {
       if (mounted) setState(() => loading = false);
@@ -110,7 +118,9 @@ class _UserMapPageState extends State<UserMapPage> {
     } catch (error) {
       if (mounted)
         setState(
-          () => locationError = error is MapLocationException ? error.message : 'Байршил тогтоож чадсангүй. Газрын зураг дээр хайх орчноо сонгоно уу.',
+          () => locationError = error is MapLocationException
+              ? error.message
+              : 'Байршил тогтоож чадсангүй. Газрын зураг дээр хайх орчноо сонгоно уу.',
         );
     } finally {
       if (mounted) setState(() => locating = false);
@@ -229,7 +239,12 @@ class _UserMapPageState extends State<UserMapPage> {
                               : Colors.indigo,
                         ),
                         onPressed: () => openStore(match),
-                        icon: const Icon(Icons.storefront, color: Colors.white),
+                        icon: Icon(
+                          match.store.categoryIcon.isEmpty
+                              ? Icons.storefront
+                              : iconForKey(match.store.categoryIcon),
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   if (widget.focus != null)
@@ -326,7 +341,8 @@ class _UserMapPageState extends State<UserMapPage> {
         const EmptyState(
           icon: Icons.storefront_outlined,
           title: 'Тохирох дэлгүүр олдсонгүй',
-          subtitle: 'Хайлт, зайны шүүлтүүрээ өөрчлөх эсвэл газрын зургаа хөдөлгөөд «Энэ орчмоос хайх» товчийг дараарай.',
+          subtitle:
+              'Хайлт, зайны шүүлтүүрээ өөрчлөх эсвэл газрын зургаа хөдөлгөөд «Энэ орчмоос хайх» товчийг дараарай.',
         ),
       for (final match in matches)
         Padding(
@@ -386,10 +402,18 @@ class _UserMapPageState extends State<UserMapPage> {
 
   @override
   Widget build(BuildContext context) {
-    final categories = {
+    final order = widget.workspace.categories;
+    int rank(String name) {
+      final index = order.indexOf(name);
+      return index < 0 ? order.length : index;
+    }
+
+    final categories = [
       'Бүгд',
-      ...stores.where((s) => s.hasLocation).map((s) => s.category),
-    };
+      ...({
+        ...stores.where((s) => s.hasLocation).map((s) => s.category),
+      }.toList()..sort((a, b) => rank(a).compareTo(rank(b)))),
+    ];
     final matches = searchStores(
       stores,
       center: center,

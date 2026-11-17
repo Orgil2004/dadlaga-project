@@ -5,7 +5,16 @@ from django.core.exceptions import (
 
 from rest_framework import serializers
 
-from .models import Organization, Product
+from .models import Category, Organization, Product
+
+
+class CategorySerializer(serializers.ModelSerializer):
+
+    store_count = serializers.IntegerField(read_only=True, default=0)
+
+    class Meta:
+        model = Category
+        fields = ['id', 'name', 'icon', 'sort_order', 'store_count']
 
 
 class ProductSerializer(serializers.ModelSerializer):
@@ -19,6 +28,17 @@ class OrganizationSerializer(serializers.ModelSerializer):
 
     products = serializers.SerializerMethodField()
 
+    # Flutter reads the category as its name, so keep it a plain string.
+    category = serializers.SlugRelatedField(
+        slug_field='name',
+        queryset=Category.objects.all()
+    )
+
+    category_icon = serializers.CharField(
+        source='category.icon',
+        read_only=True
+    )
+
     class Meta:
         model = Organization
 
@@ -27,6 +47,7 @@ class OrganizationSerializer(serializers.ModelSerializer):
             'id',
             'name',
             'category',
+            'category_icon',
             'address',
             'phone',
             'description',
@@ -43,9 +64,8 @@ class OrganizationSerializer(serializers.ModelSerializer):
         ]
 
     def get_products(self, obj):
-        products = obj.products.filter(
-            is_active=True
-        )
+        # The view prefetches only active products; .all() reuses that cache.
+        products = obj.products.all()
 
         return ProductSerializer(
             products,

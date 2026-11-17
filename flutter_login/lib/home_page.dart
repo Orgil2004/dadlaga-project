@@ -6,12 +6,14 @@ import 'user/map_page.dart';
 import 'user/messages_page.dart';
 import 'user/profile_page.dart';
 import 'user/shared_widgets.dart';
+import 'user/store_catalog.dart';
 import 'user/workspace.dart';
 import 'user_data.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key, this.workspace});
+  const HomePage({super.key, this.workspace, this.repository});
   final UserWorkspace? workspace;
+  final StoreRepository? repository;
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -35,6 +37,7 @@ class _HomePageState extends State<HomePage> {
     Icons.person_outline,
   ];
   late final UserWorkspace workspace;
+  late final StoreRepository repository;
   int selected = 0;
   bool loading = true;
   Listing? mapFocus;
@@ -45,13 +48,28 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     workspace = widget.workspace ?? UserWorkspace(account: UserData.email);
+    repository = widget.repository ?? StoreRepository();
     workspace.addListener(refresh);
     load();
+    loadCategories();
   }
 
   Future<void> load() async {
     if (widget.workspace == null) await workspace.load();
     if (mounted) setState(() => loading = false);
+  }
+
+  /// Admin-managed categories; the built-in list stays if this fails.
+  Future<void> loadCategories() async {
+    try {
+      final categories = await repository.fetchCategories();
+      for (final item in categories) {
+        categoryIconKeys[item.name] = item.icon;
+      }
+      if (mounted) {
+        workspace.setCategories([for (final c in categories) c.name]);
+      }
+    } catch (_) {}
   }
 
   void refresh() {
@@ -62,6 +80,7 @@ class _HomePageState extends State<HomePage> {
   void dispose() {
     workspace.removeListener(refresh);
     if (widget.workspace == null) workspace.dispose();
+    if (widget.repository == null) repository.dispose();
     super.dispose();
   }
 
@@ -160,11 +179,13 @@ class _HomePageState extends State<HomePage> {
       workspace: workspace,
       onOpen: openListing,
       onMap: () => navigate(1),
+      repository: repository,
     ),
     1 => UserMapPage(
       workspace: workspace,
       focus: mapFocus,
       onOpen: openListing,
+      repository: repository,
     ),
     2 => SavedPage(workspace: workspace, onOpen: openListing),
     3 => CreateListingPage(workspace: workspace, onCreated: () => navigate(0)),

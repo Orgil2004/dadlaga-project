@@ -1,11 +1,11 @@
-
-from django.db.models import Prefetch, Q
+from django.db.models import Count, Prefetch, Q
 
 from rest_framework import viewsets
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 
-from .models import Organization, Product
+from .models import Category, Organization, Product
 from .serializers import (
+    CategorySerializer,
     OrganizationSerializer,
     ProductSerializer,
 )
@@ -24,6 +24,23 @@ class ReadOnlyOrStaff(BasePermission):
         )
 
 
+def search_words(request):
+    """Split ?search= into words; every word must match somewhere."""
+    return request.query_params.get('search', '').split()[:8]
+
+
+class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
+    """Active categories, managed in the Django admin."""
+
+    serializer_class = CategorySerializer
+    pagination_class = None
+
+    def get_queryset(self):
+        return Category.objects.filter(is_active=True).annotate(
+            store_count=Count('organizations', distinct=True)
+        ).order_by('sort_order', 'name')
+
+
 class OrganizationViewSet(viewsets.ModelViewSet):
 
     serializer_class = OrganizationSerializer
@@ -32,7 +49,9 @@ class OrganizationViewSet(viewsets.ModelViewSet):
     queryset = Organization.objects.all()
 
     def get_queryset(self):
-        queryset = Organization.objects.prefetch_related(
+        queryset = Organization.objects.select_related(
+            'category'
+        ).prefetch_related(
             Prefetch(
                 'products',
                 queryset=Product.objects.filter(
@@ -41,29 +60,37 @@ class OrganizationViewSet(viewsets.ModelViewSet):
             )
         ).order_by('id')
 
-        search = self.request.query_params.get(
-            'search', ''
-        ).strip()
+        for word in search_words(self.request):
+            # Store name, category, address, or any visible product.
+            queryset = queryset.filter(
+                Q(name__icontains=word)
+                | Q(category__name__icontains=word)
+                | Q(address__icontains=word)
+                | Q(description__icontains=word)
+                | Q(
+                    products__is_active=True,
+                    products__name__icontains=word,
+                )
+                | Q(
+                    products__is_active=True,
+                    products__category__icontains=word,
+                )
+                | Q(
+                    products__is_active=True,
+                    products__colors__icontains=word,
+                )
+            )
 
         category = self.request.query_params.get(
             'category', ''
         ).strip()
 
-        if search:
-            queryset = queryset.filter(
-                Q(name__icontains=search)
-                | Q(category__icontains=search)
-                | Q(address__icontains=search)
-                | Q(description__icontains=search)
-                | Q(products__name__icontains=search)
-            ).distinct()
-
         if category:
             queryset = queryset.filter(
-                category__iexact=category
+                category__name__iexact=category
             )
 
-        return queryset
+        return queryset.distinct()
 
 
 class ProductViewSet(viewsets.ModelViewSet):
@@ -93,5 +120,14 @@ class ProductViewSet(viewsets.ModelViewSet):
                 )
             except (ValueError, OverflowError):
                 return queryset.none()
+
+        for word in search_words(self.request):
+            queryset = queryset.filter(
+                Q(name__icontains=word)
+                | Q(category__icontains=word)
+                | Q(description__icontains=word)
+                | Q(colors__icontains=word)
+                | Q(organization__name__icontains=word)
+            )
 
         return queryset

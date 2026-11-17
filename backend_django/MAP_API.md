@@ -90,3 +90,27 @@ Tests:
 ```powershell
 .\venv\Scripts\python.exe manage.py test organizations
 ```
+
+## Categories (Ангилал)
+
+Categories are managed in the admin under **Ангиллууд**: name, icon, sort
+order and an active flag. Stores pick one category (a category used by a
+store cannot be deleted; make it inactive instead). The Flutter app loads
+`GET /api/categories/` for the feed chips and the "Зар нэмэх" form, and falls
+back to its built-in list when the API is offline.
+
+| Endpoint | Response |
+| --- | --- |
+| `GET /api/categories/` | Active categories in admin order, with `icon` and `store_count` |
+| `GET /api/organizations/?category=Хувцас` | Stores in one category |
+| `GET /api/products/?search=...` | Product search (name, type, colour, store) |
+
+Rules added:
+
+- A store must have a location. The admin store form has a map: click it or
+  drag the pin to fill latitude/longitude. New stores then appear on the map
+  and in the app's search by name.
+- A product (store ad) must have a price of at least 1 ₮. User ads in the app
+  also require a price.
+- Search splits words; every word must match the store name, category,
+  address, description, or an active product's name/type/colour.

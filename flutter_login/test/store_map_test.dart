@@ -225,7 +225,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(FilledButton, 'Миний байршил'));
+      await tester.tap(find.text('Миний байршил'));
       await tester.pumpAndSettle();
       expect(find.text('Миний байршлаас хайж байна.'), findsOneWidget);
       final result = find.byKey(const ValueKey('store-result-2'));
@@ -238,7 +238,7 @@ void main() {
       expect(find.text('Алсын дэлгүүр'), findsOneWidget);
       expect(find.text('Төвийн дэлгүүр'), findsNothing);
       denied = true;
-      final locateButton = find.widgetWithText(FilledButton, 'Миний байршил');
+      final locateButton = find.text('Миний байршил');
       await tester.ensureVisible(locateButton);
       await tester.pumpAndSettle();
       await tester.tap(locateButton);

@@ -9,6 +9,66 @@ from django.core.validators import (
 )
 
 
+class Category(models.Model):
+    """Admin-managed category shared by stores and user ads."""
+
+    ICON_CHOICES = [
+        ('devices', 'Электрон'),
+        ('chair', 'Гэр ахуй'),
+        ('checkroom', 'Хувцас'),
+        ('footwear', 'Гутал'),
+        ('sports', 'Спорт'),
+        ('restaurant', 'Хоол, кафе'),
+        ('grocery', 'Хүнс'),
+        ('spa', 'Гоо сайхан'),
+        ('car', 'Авто'),
+        ('book', 'Ном, бичиг хэрэг'),
+        ('pets', 'Амьтан'),
+        ('child', 'Хүүхэд'),
+        ('handyman', 'Үйлчилгээ'),
+        ('other', 'Бусад'),
+    ]
+
+    name = models.CharField(
+        max_length=100,
+        unique=True,
+        verbose_name='Нэр'
+    )
+
+    icon = models.CharField(
+        max_length=30,
+        choices=ICON_CHOICES,
+        default='other',
+        verbose_name='Дүрс'
+    )
+
+    sort_order = models.PositiveIntegerField(
+        default=0,
+        verbose_name='Эрэмбэ',
+        help_text='Бага тоотой нь эхэнд харагдана.'
+    )
+
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name='Идэвхтэй',
+        help_text='Идэвхгүй ангилал аппын сонголтод харагдахгүй.'
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['sort_order', 'name']
+        verbose_name = 'Ангилал'
+        verbose_name_plural = 'Ангиллууд'
+
+    def save(self, *args, **kwargs):
+        self.name = ' '.join(self.name.split())
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.name
+
+
 class Organization(models.Model):
 
     VERIFICATION_CHOICES = [
@@ -20,7 +80,12 @@ class Organization(models.Model):
     # Өмнө байсан талбарууд
     name = models.CharField(max_length=200)
 
-    category = models.CharField(max_length=100)
+    category = models.ForeignKey(
+        Category,
+        related_name='organizations',
+        on_delete=models.PROTECT,
+        verbose_name='Ангилал'
+    )
 
     address = models.CharField(max_length=255)
 
@@ -114,11 +179,10 @@ class Organization(models.Model):
     def clean(self):
         super().clean()
 
-        if (self.latitude is None) != (
-            self.longitude is None
-        ):
+        if self.latitude is None or self.longitude is None:
             raise ValidationError(
-                'Өргөрөг, уртрагыг хамтад нь оруулна уу.'
+                'Дэлгүүрийн байршлыг (өргөрөг, уртраг) заавал '
+                'оруулна уу. Газрын зураг дээр дарж сонгож болно.'
             )
 
         for field in ('latitude', 'longitude'):
@@ -158,7 +222,9 @@ class Product(models.Model):
     price = models.DecimalField(
         max_digits=12,
         decimal_places=0,
-        validators=[MinValueValidator(0)]
+        validators=[MinValueValidator(1)],
+        verbose_name='Үнэ (₮)',
+        help_text='Заавал. 1 ₮-өөс дээш дүн оруулна уу.'
     )
 
     sizes = models.CharField(

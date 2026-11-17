@@ -1,8 +1,39 @@
 
 from django.contrib import admin
+from django.db.models import Count
 from django.utils import timezone
 
-from .models import Organization, Product
+from .models import Category, Organization, Product
+
+
+@admin.register(Category)
+class CategoryAdmin(admin.ModelAdmin):
+
+    list_display = [
+        'name',
+        'icon',
+        'sort_order',
+        'is_active',
+        'store_count',
+    ]
+
+    list_editable = [
+        'sort_order',
+        'is_active',
+    ]
+
+    list_filter = ['is_active']
+
+    search_fields = ['name']
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).annotate(
+            _store_count=Count('organizations')
+        )
+
+    @admin.display(description='Дэлгүүр', ordering='_store_count')
+    def store_count(self, obj):
+        return obj._store_count
 
 
 class ProductInline(admin.TabularInline):
@@ -12,6 +43,7 @@ class ProductInline(admin.TabularInline):
 
     fields = [
         'name',
+        'category',
         'price',
         'sizes',
         'colors',
@@ -39,6 +71,10 @@ class OrganizationAdmin(admin.ModelAdmin):
         'admin_email',
         'address',
     ]
+
+    autocomplete_fields = ['category']
+
+    list_select_related = ['category']
 
     list_filter = [
         'category',
@@ -102,6 +138,19 @@ class OrganizationAdmin(admin.ModelAdmin):
 
     inlines = [ProductInline]
 
+    class Media:
+        # Click the map to fill latitude/longitude (Leaflet + OSM tiles).
+        css = {
+            'all': [
+                'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
+                'organizations/location_picker.css',
+            ]
+        }
+        js = [
+            'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
+            'organizations/location_picker.js',
+        ]
+
     def save_model(self, request, obj, form, change):
         if obj.verification_status == 'approved':
             if obj.verified_at is None:
@@ -123,6 +172,7 @@ class ProductAdmin(admin.ModelAdmin):
     list_display = [
         'name',
         'organization',
+        'category',
         'price',
         'in_stock',
         'is_active',
@@ -137,8 +187,11 @@ class ProductAdmin(admin.ModelAdmin):
 
     search_fields = [
         'name',
+        'category',
         'organization__name',
     ]
+
+    list_select_related = ['organization']
 
     autocomplete_fields = [
         'organization',

@@ -24,8 +24,10 @@ class _CreateListingPageState extends State<CreateListingPage> {
       description = TextEditingController();
   final latitude = TextEditingController(text: '47.9185');
   final longitude = TextEditingController(text: '106.9177');
-  String category = listingCategories[1];
+  late String category = widget.workspace.categories.first;
   bool saving = false;
+
+  List<String> get categories => widget.workspace.categories;
 
   @override
   void dispose() {
@@ -71,7 +73,7 @@ class _CreateListingPageState extends State<CreateListingPage> {
     longitude.text = '106.9177';
     setState(() {
       saving = false;
-      category = listingCategories[1];
+      category = categories.first;
     });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -119,104 +121,122 @@ class _CreateListingPageState extends State<CreateListingPage> {
   );
 
   @override
-  Widget build(BuildContext context) => ListView(
-    padding: const EdgeInsets.all(24),
-    children: [
-      const PageHeading(
-        'Зар нэмэх',
-        'Бараа, үйлчилгээнийхээ мэдээллийг оруулаарай.',
-      ),
-      Align(
-        alignment: Alignment.topLeft,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 760),
-          child: Card(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Form(
-                key: formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const Text(
-                      'Нэмсэн зар тухайн төхөөрөмжид хадгалагдана. Бусад хэрэглэгчид хараахан харагдахгүй.',
-                      style: TextStyle(color: Colors.blueGrey),
-                    ),
-                    const SizedBox(height: 24),
-                    field(title, 'Зарын гарчиг'),
-                    DropdownButtonFormField<String>(
-                      key: ValueKey(category),
-                      initialValue: category,
-                      decoration: const InputDecoration(labelText: 'Ангилал'),
-                      items: listingCategories
-                          .skip(1)
-                          .map(
-                            (item) => DropdownMenuItem(
-                              value: item,
-                              child: Text(item),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (value) => setState(() => category = value!),
-                    ),
-                    const SizedBox(height: 20),
-                    TextFormField(
-                      controller: price,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      decoration: const InputDecoration(
-                        labelText: 'Үнэ',
-                        suffixText: '₮',
+  Widget build(BuildContext context) {
+    // Admin may rename or hide categories while this page is open.
+    if (!categories.contains(category)) category = categories.first;
+    return ListView(
+      padding: const EdgeInsets.all(24),
+      children: [
+        const PageHeading(
+          'Зар нэмэх',
+          'Бараа, үйлчилгээнийхээ мэдээллийг оруулаарай.',
+        ),
+        Align(
+          alignment: Alignment.topLeft,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 760),
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Form(
+                  key: formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const Text(
+                        'Нэмсэн зар тухайн төхөөрөмжид хадгалагдана. Бусад хэрэглэгчид хараахан харагдахгүй.',
+                        style: TextStyle(color: Colors.blueGrey),
                       ),
-                      validator: (value) {
-                        final amount = int.tryParse(value ?? '');
-                        return amount == null ||
-                                amount <= 0 ||
-                                amount > 999999999999
-                            ? 'Зөв үнэ оруулна уу (1–999999999999)'
-                            : null;
-                      },
-                    ),
-                    const SizedBox(height: 20),
-                    field(address, 'Байршил / хаяг'),
-                    field(description, 'Дэлгэрэнгүй тайлбар', lines: 4),
-                    const Text(
-                      'Газрын зургийн цэг',
-                      style: TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Анхны цэг Улаанбаатарын төвд байна. Зарынхаа бодит координатаар солино уу.',
-                      style: TextStyle(color: Colors.blueGrey),
-                    ),
-                    const SizedBox(height: 16),
-                    Wrap(
-                      spacing: 16,
-                      runSpacing: 16,
-                      children: [
-                        SizedBox(
-                          width: 230,
-                          child: coordinate(latitude, 'Өргөрөг', -90, 90),
+                      const SizedBox(height: 24),
+                      field(title, 'Зарын гарчиг'),
+                      DropdownButtonFormField<String>(
+                        key: ValueKey(category),
+                        initialValue: category,
+                        decoration: const InputDecoration(
+                          labelText: 'Ангилал *',
                         ),
-                        SizedBox(
-                          width: 230,
-                          child: coordinate(longitude, 'Уртраг', -180, 180),
+                        items: [
+                          for (final item in categories)
+                            DropdownMenuItem(
+                              value: item,
+                              child: Row(
+                                children: [
+                                  Icon(categoryIcon(item), size: 20),
+                                  const SizedBox(width: 10),
+                                  Text(item),
+                                ],
+                              ),
+                            ),
+                        ],
+                        onChanged: (value) => setState(() => category = value!),
+                      ),
+                      const SizedBox(height: 20),
+                      TextFormField(
+                        controller: price,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
+                        maxLength: 12,
+                        decoration: const InputDecoration(
+                          labelText: 'Үнэ *',
+                          suffixText: '₮',
+                          helperText: 'Үнийн мэдээлэл заавал шаардлагатай.',
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 28),
-                    FilledButton.icon(
-                      onPressed: saving ? null : submit,
-                      icon: const Icon(Icons.add_circle_outline),
-                      label: Text(saving ? 'Хадгалж байна…' : 'Зар нэмэх'),
-                    ),
-                  ],
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Үнийг заавал оруулна уу';
+                          }
+                          final amount = int.tryParse(value);
+                          return amount == null ||
+                                  amount <= 0 ||
+                                  amount > 999999999999
+                              ? 'Зөв үнэ оруулна уу (1–999999999999)'
+                              : null;
+                        },
+                      ),
+                      const SizedBox(height: 20),
+                      field(address, 'Байршил / хаяг'),
+                      field(description, 'Дэлгэрэнгүй тайлбар', lines: 4),
+                      const Text(
+                        'Газрын зургийн цэг',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Анхны цэг Улаанбаатарын төвд байна. Зарынхаа бодит координатаар солино уу.',
+                        style: TextStyle(color: Colors.blueGrey),
+                      ),
+                      const SizedBox(height: 16),
+                      Wrap(
+                        spacing: 16,
+                        runSpacing: 16,
+                        children: [
+                          SizedBox(
+                            width: 230,
+                            child: coordinate(latitude, 'Өргөрөг', -90, 90),
+                          ),
+                          SizedBox(
+                            width: 230,
+                            child: coordinate(longitude, 'Уртраг', -180, 180),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 28),
+                      FilledButton.icon(
+                        key: const ValueKey('listing-submit'),
+                        onPressed: saving ? null : submit,
+                        icon: const Icon(Icons.add_circle_outline),
+                        label: Text(saving ? 'Хадгалж байна…' : 'Зар нэмэх'),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
         ),
-      ),
-    ],
-  );
+      ],
+    );
+  }
 }

@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
-from organizations.models import Organization, Product
+from organizations.models import Category, Organization, Product
 
 
 class Command(BaseCommand):
@@ -21,7 +21,10 @@ class Command(BaseCommand):
              [('Спорт цамц', 'Спорт хувцас', 69000, 'S, M, L', 'Саарал, Хар'),
               ('Бэлтгэлийн өмд', 'Өмд', 79000, 'S, M, L, XL', 'Хар')]),
         ]
-        for name, category, address, latitude, longitude, products in samples:
+        icons = {'Хувцас': 'checkroom', 'Гутал': 'footwear', 'Спорт': 'sports'}
+        for name, category_name, address, latitude, longitude, products in samples:
+            category, _ = Category.objects.get_or_create(
+                name=category_name, defaults={'icon': icons.get(category_name, 'other')})
             store, _ = Organization.objects.get_or_create(name=name, is_demo=True, defaults={
                 'category': category, 'address': address, 'latitude': latitude, 'longitude': longitude,
                 'opening_hours': '10:00–20:00 (жишээ)',

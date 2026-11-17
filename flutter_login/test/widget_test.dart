@@ -105,14 +105,14 @@ void main() {
     final workspace = UserWorkspace(account: UserData.email, persist: false);
     await tester.pumpWidget(MaterialApp(home: HomePage(workspace: workspace)));
     await navigate(tester, 3);
-    final submit = find.widgetWithText(FilledButton, 'Зар нэмэх');
+    final submit = find.byKey(const ValueKey('listing-submit'));
     await tester.ensureVisible(submit);
     await tester.pumpAndSettle();
     await tester.tap(submit);
     await tester.pumpAndSettle();
     expect(workspace.myListings, isEmpty);
     await enterField(tester, 'Зарын гарчиг', 'Туршилтын утас');
-    await enterField(tester, 'Үнэ', '350000');
+    await enterField(tester, 'Үнэ *', '350000');
     await enterField(tester, 'Байршил / хаяг', 'Хан-Уул дүүрэг');
     await enterField(
       tester,
@@ -132,7 +132,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(workspace.myListings.single.title, 'Туршилтын утас');
     await tester.enterText(
-      find.widgetWithText(TextField, 'Зар хайх'),
+      find.widgetWithText(TextField, 'Зар, дэлгүүр хайх'),
       'Туршилтын утас',
     );
     await tester.pumpAndSettle();
@@ -140,7 +140,7 @@ void main() {
     await navigate(tester, 5);
     expect(find.text('Миний зар: 1'), findsOneWidget);
     await enterField(tester, 'Нэр', 'Бат');
-    final save = find.widgetWithText(FilledButton, 'Профайл хадгалах');
+    final save = find.text('Профайл хадгалах');
     await tester.ensureVisible(save);
     await tester.pumpAndSettle();
     await tester.tap(save);

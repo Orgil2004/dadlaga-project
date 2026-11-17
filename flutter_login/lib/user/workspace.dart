@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../user_data.dart';
 
+/// Used until the admin-managed categories load (or if the API is offline).
 const listingCategories = [
   'Бүгд',
   'Электрон бараа',
@@ -69,7 +70,8 @@ const demoListings = [
     category: 'Электрон бараа',
     price: 2400000,
     address: 'Сүхбаатар дүүрэг, 1-р хороо',
-    description: '8GB RAM, 256GB SSD. Цэнэглэгчийн хамт, цэвэрхэн хэрэглэсэн. Энэ нь жишээ зар юм.',
+    description:
+        '8GB RAM, 256GB SSD. Цэнэглэгчийн хамт, цэвэрхэн хэрэглэсэн. Энэ нь жишээ зар юм.',
     owner: 'Техно дэлгүүр',
     latitude: 47.9185,
     longitude: 106.9177,
@@ -118,6 +120,9 @@ class UserWorkspace extends ChangeNotifier {
   final List<Listing> listings = [...demoListings];
   final Set<String> savedIds = {};
   final Map<String, List<String>> messages = {};
+
+  /// Selectable categories (without 'Бүгд'), in admin order.
+  List<String> categories = listingCategories.skip(1).toList();
   String name = UserData.name;
   String phone = '';
   String bio = '';
@@ -185,6 +190,27 @@ class UserWorkspace extends ChangeNotifier {
     _disposed = true;
     super.dispose();
   }
+
+  void setCategories(List<String> names) {
+    final clean = [
+      for (final name in names)
+        if (name.trim().isNotEmpty) name.trim(),
+    ];
+    if (clean.isEmpty || listEquals(clean, categories)) return;
+    categories = clean;
+    if (!_disposed) notifyListeners();
+  }
+
+  /// Filter chips: 'Бүгд', admin categories, then any category still used
+  /// by an ad (e.g. an ad made before its category was renamed).
+  List<String> get filterCategories => [
+    'Бүгд',
+    ...categories,
+    ...{
+      for (final ad in listings)
+        if (!categories.contains(ad.category)) ad.category,
+    },
+  ];
 
   Future<void> toggleSaved(Listing ad) {
     if (!savedIds.add(ad.id)) savedIds.remove(ad.id);
