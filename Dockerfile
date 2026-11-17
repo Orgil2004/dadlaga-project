@@ -1,5 +1,26 @@
 
-FROM ghcr.io/cirruslabs/flutter:3.50.0 AS build
+FROM debian:bookworm-slim AS build
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    git \
+    unzip \
+    xz-utils \
+    bash \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN curl -fSL \
+    https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.47.6-stable.tar.xz \
+    -o /tmp/flutter.tar.xz \
+    && mkdir -p /opt \
+    && tar -xf /tmp/flutter.tar.xz -C /opt \
+    && rm /tmp/flutter.tar.xz
+
+ENV PATH="/opt/flutter/bin:${PATH}"
+
+RUN git config --global --add safe.directory /opt/flutter
+RUN flutter --version
 
 WORKDIR /app
 
